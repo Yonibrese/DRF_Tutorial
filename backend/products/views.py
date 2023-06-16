@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, mixins
 
 from .models import products
 from rest_framework.response import Response
@@ -61,6 +61,33 @@ class ProductListApiView(generics.ListAPIView):
     serializer_class = productsSerializer
 
 product_list_view = ProductListApiView.as_view()
+# class based view that handels almost everything
+class ProductMixinView(mixins.ListModelMixin,
+                       mixins.CreateModelMixin,
+                       mixins.RetrieveModelMixin, 
+                       generics.GenericAPIView):
+     
+     queryset = products.objects.all()
+     serializer_class = productsSerializer
+     lookup_field = 'pk'
+      
+     def get(self, request, *args, **kwargs): # list view Get->request
+        pk = kwargs.get("pk")
+        if pk is not None:
+            return self.retrieve(request, *args, **kwargs)
+        return self.list(request,*args, **kwargs)
+
+     def post(self, request, *args, **kwargs):
+          return self.create(request, *args, **kwargs)
+     
+     def perform_create(self, serializer):
+         title = serializer.validated_data.get('title')
+         content = serializer.validated_data.get('content')
+         if content is None:
+             content = 'This Item is created from the mixin class'
+         serializer.save(content = content)
+     
+
 
 
 # single view for listAll(), GET(<id>), and POST
